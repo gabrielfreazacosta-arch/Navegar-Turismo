@@ -7,10 +7,10 @@ const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 
 const PORT = Number(process.env.PORT) || 3000;
-const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD;
+const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || process.env.ACCESS_SWORD;
 
 if (!ACCESS_PASSWORD || ACCESS_PASSWORD.length < 8) {
-  console.error('ACCESS_PASSWORD is missing or shorter than 8 characters. Check your .env file.');
+  console.error('ACCESS_PASSWORD is missing or shorter than 8 characters. Check your environment variables.');
   process.exit(1);
 }
 
