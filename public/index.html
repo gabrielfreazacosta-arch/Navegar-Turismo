@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel de Clientes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="login-view" class="login" hidden>
+    <form id="login-form" class="login-card" novalidate>
+      <p class="eyebrow">Área interna</p>
+      <h1>Painel de Clientes</h1>
+      <p class="muted">Digite a senha de acesso para ver a lista de clientes.</p>
+      <label for="password-input">Senha de acesso</label>
+      <input id="password-input" type="password" autocomplete="current-password" required>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+      <button type="submit" class="button button-primary">Entrar</button>
+    </form>
+  </main>
+
+  <div id="app-view" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Área interna</p>
+        <h1>Clientes</h1>
+      </div>
+      <div class="topbar-side">
+        <p class="counter"><span id="total-count">0</span><span class="counter-label">encontrados</span></p>
+        <div class="topbar-actions">
+                    <select id="lang-select" class="button" style="cursor: pointer; padding: 4px 8px; font-weight: bold; border-radius: 6px; border: 1px solid #ccc; background-color: #fff; margin-right: 8px;">
+            <option value="pt">🇧🇷 PT</option>
+            <option value="en">🇺🇸 EN</option>
+            <option value="es">🇪🇸 ES</option>
+          </select>
+
+          <button type="button" id="new-button" class="button button-primary">Novo cliente</button>
+          <button type="button" id="logout-button" class="button">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="toolbar">
+        <label class="visually-hidden" for="search-input">Buscar cliente</label>
+        <input id="search-input" type="search" placeholder="Buscar por nome, e-mail, telefone, documento ou cidade" autocomplete="off">
+      </div>
+
+      <p id="status-message" class="visually-hidden" role="status" aria-live="polite"></p>
+
+      <div id="skeleton" class="skeleton" aria-hidden="true" hidden></div>
+
+      <div id="table-wrapper" class="table-wrapper" hidden>
+        <table>
+                    <thead>
+            <tr>
+              <th scope="col">Cliente</th>
+              <th scope="col">E-mail</th>
+              <th scope="col">Telefone</th>
+              <th scope="col">Cidade</th>
+              <th scope="col">País</th>
+              <th scope="col">Cadastro</th>
+              <th scope="col" style="width: 50px;"></th> <!-- COLUNA ADICIONAL DO X -->
+            </tr>
+          </thead>
+
+          <tbody id="clients-body"></tbody>
+        </table>
+      </div>
+
+      <section id="empty-state" class="state" hidden>
+        <h2 id="empty-title">Nenhum cliente encontrado</h2>
+        <p id="empty-text" class="muted"></p>
+      </section>
+
+      <section id="error-state" class="state state-error" role="alert" hidden>
+        <h2>Não foi possível carregar os clientes</h2>
+        <p id="error-text" class="muted"></p>
+        <button type="button" id="retry-button" class="button">Tentar novamente</button>
+      </section>
+
+      <nav id="pagination" class="pagination" aria-label="Paginação" hidden>
+        <button type="button" id="prev-button" class="button">Anterior</button>
+        <p id="page-info" class="muted"></p>
+        <button type="button" id="next-button" class="button">Próxima</button>
+      </nav>
+    </main>
+  </div>
+
+  <dialog id="client-dialog" class="dialog" aria-labelledby="dialog-title">
+    <div class="dialog-inner">
+      <div class="dialog-header">
+        <h2 id="dialog-title"></h2>
+        <button type="button" id="dialog-close" class="button">Fechar</button>
+      </div>
+      <dl id="dialog-details" class="details"></dl>
+      <p id="dialog-error" class="form-error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" id="delete-button" class="button button-danger">Excluir</button>
+        <button type="button" id="edit-button" class="button button-primary">Editar</button>
+      </div>
+    </div>
+  </dialog>
+
+    <dialog id="form-dialog" class="dialog" aria-labelledby="form-title">
+    <form id="client-form" class="dialog-inner">
+      <div class="dialog-header">
+        <h2 id="form-title">Novo cliente</h2>
+      </div>
+
+      <div class="form-grid">
+        <div class="field field-wide">
+          <label for="input-name">Nome completo *</label>
+          <input id="input-name" name="full_name" type="text" maxlength="150" required autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="input-document">CPF ou passaporte</label>
+          <input id="input-document" name="document" type="text" maxlength="30" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="input-birth">Data de nascimento</label>
+          <input id="input-birth" name="birth_date" type="date" min="1900-01-01">
+        </div>
+        <div class="field">
+          <label for="input-email">E-mail</label>
+          <input id="input-email" name="email" type="email" maxlength="150" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="input-phone">Telefone</label>
+          <input id="input-phone" name="phone" type="tel" maxlength="30" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="input-city">Cidade</label>
+          <input id="input-city" name="city" type="text" maxlength="80" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="input-state">Estado</label>
+          <input id="input-state" name="state" type="text" maxlength="40" autocomplete="off">
+        </div>
+        <div class="field field-wide">
+          <label for="input-country">País</label>
+          <input id="input-country" name="country" type="text" maxlength="60" autocomplete="off">
+        </div>
+        <div class="field field-wide">
+          <label for="input-notes">Observações</label>
+          <textarea id="input-notes" name="notes" rows="3" maxlength="2000"></textarea>
+        </div>
+      </div>
+
+      <p id="form-error" class="form-error" role="alert" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" id="form-cancel" class="button">Cancelar</button>
+        <button type="submit" id="form-submit" class="button button-primary">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
