@@ -8,6 +8,7 @@ const { Pool } = require('pg');
 
 const PORT = Number(process.env.PORT) || 3000;
 const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || process.env.ACCESS_SWORD;
+// Forçando novo build na vercel
 
 if (!ACCESS_PASSWORD || ACCESS_PASSWORD.length < 8) {
   console.error('ACCESS_PASSWORD is missing or shorter than 8 characters. Check your environment variables.');
