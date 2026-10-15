@@ -122,7 +122,8 @@
 
   let activeController = null;
   let searchTimer = null;
-
+  let selectedClient = null;
+  let editingId = null;
   // Builds the loading placeholders once.
   for (let i = 0; i < 6; i += 1) {
     const row = document.createElement('div');
@@ -356,7 +357,8 @@
     }
   }
 
-  function openDetails(client) {
+    function openDetails(client) {
+    selectedClient = client;
     el.dialogTitle.textContent = client.full_name;
     el.dialogDetails.replaceChildren();
 
@@ -444,30 +446,113 @@
       el.dialog.close();
     }
   });
-  // ==========================================
-  // FUNÇÃO PARA ABRIR O MODAL DE NOVO CLIENTE
+    // ==========================================
+  // MODAL DE NOVO CLIENTE, EDITAR E EXCLUIR
   // ==========================================
   const newButton = document.getElementById('new-button');
   const formDialog = document.getElementById('form-dialog');
   const formCancel = document.getElementById('form-cancel');
+  const editButton = document.getElementById('edit-button');
+  const deleteButton = document.getElementById('delete-button');
+
+  // Maps each client field to the id of its input in the form.
+  const FORM_FIELD_IDS = {
+    full_name: 'input-name',
+    email: 'input-email',
+    phone: 'input-phone',
+    document: 'input-document',
+    birth_date: 'input-birth',
+    city: 'input-city',
+    state: 'input-state',
+    country: 'input-country',
+    notes: 'input-notes',
+  };
+
+  function setFormTitle(text) {
+    const title = document.getElementById('form-title');
+    if (title) title.textContent = text;
+  }
 
   if (newButton && formDialog) {
     newButton.addEventListener('click', () => {
-      formDialog.showModal(); // Abre o modal na tela
+      editingId = null;
+      const form = document.getElementById('client-form');
+      if (form) form.reset();
+      setFormTitle('Novo cliente');
+      formDialog.showModal();
     });
   }
 
   if (formCancel && formDialog) {
     formCancel.addEventListener('click', () => {
-      formDialog.close(); // Fecha se clicar em Cancelar
+      formDialog.close();
+    });
+  }
+
+  // Botão "Editar" da janela de detalhes: abre o formulário preenchido.
+  if (editButton && formDialog) {
+    editButton.addEventListener('click', () => {
+      if (!selectedClient) return;
+
+      editingId = selectedClient.id;
+
+      Object.entries(FORM_FIELD_IDS).forEach(([field, inputId]) => {
+        const input = document.getElementById(inputId);
+        if (input) {
+          input.value = selectedClient[field] ?? '';
+        }
+      });
+
+      setFormTitle('Editar cliente');
+      el.dialog.close();
+      formDialog.showModal();
+    });
+  }
+
+  // Botão "Excluir" da janela de detalhes.
+  if (deleteButton) {
+    deleteButton.addEventListener('click', async () => {
+      if (!selectedClient) return;
+
+      const confirmDelete = confirm(
+        `Deseja realmente excluir o cliente "${selectedClient.full_name}"? Essa ação não pode ser desfeita.`
+      );
+      if (!confirmDelete) return;
+
+      const password = sessionStorage.getItem(STORAGE_KEY);
+
+      try {
+        const response = await fetch(`/api/clients/${selectedClient.id}`, {
+          method: 'DELETE',
+          headers: { 'x-access-password': password },
+        });
+
+        if (!response.ok) {
+          let message = 'Erro no servidor.';
+          try {
+            const result = await response.json();
+            message = result.error || message;
+          } catch (parseError) {
+            // Keeps the default message when the response has no JSON body.
+          }
+          alert(`Erro ao excluir: ${message}`);
+          return;
+        }
+
+        selectedClient = null;
+        el.dialog.close();
+        loadClients();
+      } catch (error) {
+        console.error('Erro na requisição de exclusão:', error);
+        alert('Não foi possível conectar ao servidor.');
+      }
     });
   }
 
   // ==========================================
-  // ESCUTADOR GLOBAL - FORÇA O FUNCIONAMENTO DO BOTÃO
+  // ENVIO DO FORMULÁRIO (CADASTRAR OU ATUALIZAR)
   // ==========================================
   document.addEventListener('submit', async (event) => {
-    // Só executa se o envio vier do nosso formulário de cliente
     if (event.target && event.target.id === 'client-form') {
       event.preventDefault();
 
@@ -478,7 +563,6 @@
         return;
       }
 
-      // Captura os valores de forma segura prevenindo elementos nulos
       const formData = {
         full_name: document.getElementById('input-name')?.value || '',
         email: document.getElementById('input-email')?.value || null,
@@ -491,9 +575,11 @@
         notes: document.getElementById('input-notes')?.value || null,
       };
 
+      const isEditing = editingId !== null;
+
       try {
-        const response = await fetch('/api/clients', {
-          method: 'POST',
+        const response = await fetch(isEditing ? `/api/clients/${editingId}` : '/api/clients', {
+          method: isEditing ? 'PUT' : 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-access-password': password,
@@ -504,27 +590,27 @@
         const result = await response.json();
 
         if (!response.ok) {
-          alert(`Erro ao cadastrar: ${result.error}`);
+          alert(`${isEditing ? 'Erro ao atualizar' : 'Erro ao cadastrar'}: ${result.error}`);
           return;
         }
 
-        alert('Cliente cadastrado com sucesso!');
-        event.target.reset(); // Limpa os campos do formulário na tela
+        alert(isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!');
+        editingId = null;
+        selectedClient = null;
+        event.target.reset();
 
-        // Fecha a janela do modal automaticamente
-        const formDialog = document.getElementById('form-dialog');
-        if (formDialog && typeof formDialog.close === 'function') {
-          formDialog.close();
+        const currentFormDialog = document.getElementById('form-dialog');
+        if (currentFormDialog && typeof currentFormDialog.close === 'function') {
+          currentFormDialog.close();
         }
 
-        loadClients(); // Recarrega a tabela com o novo cliente
+        loadClients();
       } catch (error) {
         console.error('Erro na requisição:', error);
         alert('Não foi possível conectar ao servidor.');
       }
     }
   });
-
   loadClients();
     // ==========================================
   // CONFIGURAÇÃO DO ESCUTADOR DE IDIOMAS (NO FINAL DO ARQUIVO)
